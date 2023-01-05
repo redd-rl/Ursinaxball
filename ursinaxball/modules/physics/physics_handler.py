@@ -15,18 +15,17 @@ def resolve_disc_disc_collision(disc_a: Disc, disc_b: Disc) -> None:
     if 0 < dist <= radius_sum:
         normal = (disc_a.position - disc_b.position) / dist
         mass_factor = disc_a.inverse_mass / (disc_a.inverse_mass + disc_b.inverse_mass)
-        disc_a.position += normal * (radius_sum - dist) * mass_factor
-        disc_b.position -= normal * (radius_sum - dist) * (1 - mass_factor)
+        disc_a.position = np.add(disc_a.position, normal * (radius_sum - dist) * mass_factor, casting="unsafe")
+        disc_b.position = np.subtract(disc_b.position, normal * (radius_sum - dist) * (1 - mass_factor),casting="unsafe")
         relative_velocity = disc_a.velocity - disc_b.velocity
         normal_velocity = np.dot(relative_velocity, normal)
         if normal_velocity < 0:
             bouncing_factor = -(
                 1 + disc_a.bouncing_coefficient * disc_b.bouncing_coefficient
             )
-            disc_a.velocity += normal * normal_velocity * bouncing_factor * mass_factor
-            disc_b.velocity -= (
-                normal * normal_velocity * bouncing_factor * (1 - mass_factor)
-            )
+            disc_a.velocity = np.add(disc_a.velocity, normal * normal_velocity * bouncing_factor * mass_factor)
+            disc_b.velocity = np.subtract(disc_b.velocity,
+                normal * normal_velocity * bouncing_factor * (1 - mass_factor),casting="unsafe")
 
     return
 
@@ -38,13 +37,13 @@ def resolve_disc_vertex_collision(disc: Disc, vertex: Vertex) -> None:
     dist = np.linalg.norm(disc.position - vertex.position)
     if 0 < dist <= disc.radius:
         normal = (disc.position - vertex.position) / dist
-        disc.position += normal * (disc.radius - dist)
+        disc.position = np.add(disc.position, normal * (disc.radius - dist),casting="unsafe")
         normal_velocity = np.dot(disc.velocity, normal)
         if normal_velocity < 0:
             bouncing_factor = -(
                 1 + disc.bouncing_coefficient * vertex.bouncing_coefficient
             )
-            disc.velocity += normal * normal_velocity * bouncing_factor
+            disc.velocity = np.add(disc.velocity, normal * normal_velocity * bouncing_factor,casting="unsafe")
 
     return
 
@@ -121,13 +120,13 @@ def resolve_disc_segment_collision(disc: Disc, segment: Segment) -> None:
         dist, normal = segment_apply_bias(segment, dist, normal)
 
         if dist < disc.radius:
-            disc.position += normal * (disc.radius - dist)
+            disc.position = np.add(disc.position, normal * (disc.radius - dist), casting="unsafe") 
             normal_velocity = np.dot(disc.velocity, normal)
             if normal_velocity < 0:
                 bouncing_factor = -(
                     1 + disc.bouncing_coefficient * segment.bouncing_coefficient
                 )
-                disc.velocity += normal * normal_velocity * bouncing_factor
+                disc.velocity = np.add(disc.velocity, normal * normal_velocity * bouncing_factor, casting="unsafe")
 
     return
 
@@ -139,13 +138,13 @@ def resolve_disc_plane_collision(disc: Disc, plane: Plane) -> None:
     norm_plane = plane.normal / np.linalg.norm(plane.normal)
     dist = plane.distance_origin - np.dot(disc.position, norm_plane) + disc.radius
     if dist > 0:
-        disc.position += norm_plane * dist
+        disc.position = np.add(disc.position, norm_plane * dist, casting="unsafe")
         normal_velocity = np.dot(disc.velocity, norm_plane)
         if normal_velocity < 0:
             bouncing_factor = -(
                 1 + disc.bouncing_coefficient * plane.bouncing_coefficient
             )
-            disc.velocity += plane.normal * normal_velocity * bouncing_factor
+            disc.velocity = np.add(disc.velocity, plane.normal * normal_velocity * bouncing_factor,casting="unsafe")
 
 
 def resolve_collisions(stadium_game: Stadium) -> None:
@@ -183,5 +182,5 @@ def update_discs(stadium_game: Stadium) -> None:
     Function that updates the position and velocity of the discs
     """
     for disc in stadium_game.discs:
-        disc.position += disc.velocity
+        disc.position = np.add(disc.position,disc.velocity,casting="unsafe")
         disc.velocity = (disc.velocity + disc.gravity) * disc.damping
